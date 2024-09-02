@@ -6,7 +6,7 @@ import telebot
 import datetime
 import numpy as np
 from logging.handlers import RotatingFileHandler
-from common.util import flags, available_currency
+from common.util import flags, available_currency_dict
 from database.influx import client as influx_client
 from database.influx import bucket, org
 from database.mysql import get_connection_pool
@@ -101,10 +101,16 @@ def now(msg: telebot.types.Message):
 def subscribe_to(msg: telebot.types.Message):
     username = msg.chat.username
     chat_id = msg.chat.id
-    currency = msg.text.strip('/').upper()
+    currency = msg.text.strip('/')
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    if currency not in available_currency:
+    if currency in available_currency_dict.keys():
+        currency = available_currency_dict.get(currency)
+        
+    elif currency.upper() in available_currency_dict.values():
+        currency = currency.upper()
+        
+    else:
         my_bot.send_message(chat_id,
                             text="This currency is not available yet")
         return
@@ -182,12 +188,8 @@ def get_emoji_id(message: telebot.types.Message):
 
 def gen_target_currency_keyboard():
     markup = ReplyKeyboardMarkup(row_width = 3, resize_keyboard = True, one_time_keyboard = True)
-    for currency in available_currency:
+    for currency in available_currency_dict.keys():
         markup.add(KeyboardButton(currency))
-    # markup.add(
-    #     KeyboardButton("MYR"), 
-    #     KeyboardButton("JPY")
-    # )
     return markup
 
 @my_bot.message_handler(commands=["start"])
@@ -211,9 +213,15 @@ def convert(message: telebot.types.Message):
 def get_user_conversion_target(message: telebot.types.Message):
     username = message.chat.username
     chat_id = message.chat.id
-    currency = message.text.strip('/').upper()
+    currency = message.text.strip('/')
     
-    if currency not in available_currency:
+    if currency in available_currency_dict.keys():
+        currency = available_currency_dict.get(currency)
+    
+    elif currency.upper() in available_currency_dict.values():
+        currency = currency.upper()
+        
+    else:
         logger.warning("%s (id: %s) tried to convert weird currency %s", username, chat_id, currency)
         my_bot.send_message(chat_id,
                             text="This currency is not available yet")

@@ -8,4 +8,8 @@ flags = {
     "CNY": "🇨🇳"
 }
 
-available_currency = ["JPY", "MYR", "CNY"]
+available_currency_dict = {
+    "🇯🇵 Japanese Yen 🇯🇵": "JPY",
+    "🇲🇾 Malaysia Ringgit 🇲🇾": "MYR",
+    "🇨🇳 Chinese Yuan 🇨🇳": "CNY"
+}
