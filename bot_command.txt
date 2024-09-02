@@ -1,0 +1,9 @@
+start - Starting subscription
+now - Receive the currency current rate that you subscribed
+convert - Calculate how much your SGD convert into
+unsubscribe - Unsubscribe
+help - Guideline
+
+---- Archived ----
+jpy - Subscribe to SGD --> JPY
+myr - Subscribe to SGD --> MYR
