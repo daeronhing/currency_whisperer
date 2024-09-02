@@ -97,7 +97,7 @@ def now(msg: telebot.types.Message):
     sql_cursor.close()
     mydb.close()
 
-@my_bot.message_handler(commands=['jpy', 'myr', 'cny'])
+@my_bot.message_handler(commands=['jpy', 'myr', 'cny', 'twd'])
 def subscribe_to(msg: telebot.types.Message):
     username = msg.chat.username
     chat_id = msg.chat.id
@@ -187,7 +187,7 @@ def get_emoji_id(message: telebot.types.Message):
     logger.info(message.text)
 
 def gen_target_currency_keyboard():
-    markup = ReplyKeyboardMarkup(row_width = 3, resize_keyboard = True, one_time_keyboard = True)
+    markup = ReplyKeyboardMarkup(row_width = 2, resize_keyboard = True, one_time_keyboard = True)
     for currency in available_currency_dict.keys():
         markup.add(KeyboardButton(currency))
     return markup

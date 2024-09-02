@@ -12,7 +12,8 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 link = {
     "MYR": "https://www.google.com/finance/quote/SGD-MYR?hl=en",
     "JPY": "https://www.google.com/finance/quote/SGD-JPY?hl=en",
-    "CNY": "https://www.google.com/finance/quote/SGD-CNY?hl=en"
+    "CNY": "https://www.google.com/finance/quote/SGD-CNY?hl=en",
+    "TWD": "https://www.google.com/finance/quote/SGD-TWD?hl=en"
 }
 
 def get_rate(url: str) -> float:
