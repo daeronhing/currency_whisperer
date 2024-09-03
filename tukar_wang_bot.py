@@ -97,7 +97,8 @@ def now(msg: telebot.types.Message):
     sql_cursor.close()
     mydb.close()
 
-@my_bot.message_handler(commands=['jpy', 'myr', 'cny', 'twd', 'gbp'])
+# @my_bot.message_handler(commands=['jpy', 'myr', 'cny', 'twd', 'gbp'])
+@my_bot.message_handler(commands=list(map(lambda s: s.lower(), available_currency_dict.values())))
 def subscribe_to(msg: telebot.types.Message):
     username = msg.chat.username
     chat_id = msg.chat.id
