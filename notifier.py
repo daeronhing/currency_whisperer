@@ -28,13 +28,21 @@ class Rate:
 def query_rate_of_the_day(source, target) -> Rate:
     query_api = influx_client.query_api()
     
+    today_date = datetime.date.today()
+    start_time = datetime.datetime(
+        year = today_date.year,
+        month = today_date.month,
+        day = today_date.day
+    ).astimezone(datetime.timezone.utc).isoformat()
+    
     query = 'from(bucket:"{bucket}")\
-        |> range(start: -18h)\
+        |> range(start: {start_time})\
         |> filter(fn: (r) => r._measurement == "currency")\
         |> filter(fn: (r) => r.source == "{source}")\
         |> filter(fn: (r) => r.target == "{target}")\
         |> filter(fn: (r) => r._field == "rate")'.format(
             bucket = bucket,
+            start_time = start_time,
             source = source,
             target = target
         )

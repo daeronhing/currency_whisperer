@@ -6,12 +6,14 @@ flags = {
     "JPY": "🇯🇵",
     "MYR": "🇲🇾",
     "CNY": "🇨🇳",
-    "TWD": "🇹🇼"
+    "TWD": "🇹🇼",
+    "GBP": "🇬🇧"
 }
 
 available_currency_dict = {
     "🇯🇵 Japanese Yen 🇯🇵": "JPY",
     "🇲🇾 Malaysia Ringgit 🇲🇾": "MYR",
     "🇨🇳 Chinese Yuan 🇨🇳": "CNY",
-    "🇹🇼 Taiwan Dollar 🇹🇼": "TWD"
+    "🇹🇼 Taiwan Dollar 🇹🇼": "TWD",
+    "🇬🇧 Pound Sterling 🇬🇧": "GBP"
 }

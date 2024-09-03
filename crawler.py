@@ -13,7 +13,8 @@ link = {
     "MYR": "https://www.google.com/finance/quote/SGD-MYR?hl=en",
     "JPY": "https://www.google.com/finance/quote/SGD-JPY?hl=en",
     "CNY": "https://www.google.com/finance/quote/SGD-CNY?hl=en",
-    "TWD": "https://www.google.com/finance/quote/SGD-TWD?hl=en"
+    "TWD": "https://www.google.com/finance/quote/SGD-TWD?hl=en",
+    "GBP": "https://www.google.com/finance/quote/SGD-GBP?hl=en"
 }
 
 def get_rate(url: str) -> float:
