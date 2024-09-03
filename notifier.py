@@ -8,7 +8,7 @@ from database.influx import client as influx_client
 from database.influx import bucket, org
 from database.mysql import get_connection_pool
 from tukar_wang_bot import my_bot
-from common.util import flags, available_currency
+from common.util import flags, available_currency_dict
 
 class Rate:
     def __init__(self, 
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     logger.addHandler(file_handler)
     
     rate = []
-    for target in available_currency:
+    for target in available_currency_dict.values():
         rate.append((target, query_rate_of_the_day('SGD', target)))
     
     # Separate so that the subsequent message doesn't take too long to send
