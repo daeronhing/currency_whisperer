@@ -37,6 +37,11 @@ def now(msg: telebot.types.Message):
     username = msg.chat.username
     chat_id = msg.chat.id
     
+    my_bot.send_chat_action(
+        chat_id = chat_id,
+        action = "typing"
+    )
+    
     try:
         mydb = get_connection_pool()
         sql_cursor = mydb.cursor()
@@ -115,6 +120,11 @@ def subscribe_to(msg: telebot.types.Message):
         my_bot.send_message(chat_id,
                             text="This currency is not available yet")
         return
+    
+    my_bot.send_chat_action(
+        chat_id = chat_id,
+        action = "typing"
+    )
     
     try:
         mydb = get_connection_pool()
@@ -250,6 +260,11 @@ def calc_conversion(message: telebot.types.Message, currency):
         my_bot.send_message(chat_id,
                             text="Please try again later")
         return
+    
+    my_bot.send_chat_action(
+        chat_id = chat_id,
+        action = "typing"
+    )
     
     try:
         query_api = influx_client.query_api()

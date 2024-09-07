@@ -24,8 +24,51 @@ class Rate:
         self.min = min
         self.max_time = max_time
         self.min_time = min_time
+        self.yesterday_average = None
+        self.percentage_increase = None
+
+def query_average_rate_of_yesterday(source,target) -> float:
+    query_api = influx_client.query_api()
+    
+    today_date = datetime.date.today()
+    yesterday_date = today_date + datetime.timedelta(days=-1)
+    
+    start_time = datetime.datetime(
+        year = yesterday_date.year,
+        month = yesterday_date.month,
+        day = yesterday_date.day
+    ).astimezone(datetime.timezone.utc).isoformat()
+    
+    stop_time = datetime.datetime(
+        year = today_date.year,
+        month = today_date.month,
+        day = today_date.day
+    ).astimezone(datetime.timezone.utc).isoformat()
+    
+    query = 'from(bucket: "{bucket}")\
+        |> range(start: {start_time}, stop: {stop_time})\
+        |> filter(fn: (r) => r._measurement == "currency")\
+        |> filter(fn: (r) => r.source == "{source}")\
+        |> filter(fn: (r) => r.target == "{target}")\
+        |> mean()'.format(
+            bucket = bucket,
+            start_time = start_time,
+            stop_time = stop_time,
+            source = source,
+            target = target
+        )
+        
+    try:
+        table = query_api.query(org=org, query=query)
+        result = table.to_values(columns=['_value'])
+        return float(result[0][0])
+    
+    except Exception as err:
+        logger.error("Query yesterday average error: {err}".format(err = err))
+        return None
     
 def query_rate_of_the_day(source, target) -> Rate:
+    yesterday_average = query_average_rate_of_yesterday(source, target)
     query_api = influx_client.query_api()
     
     today_date = datetime.date.today()
@@ -70,6 +113,11 @@ def query_rate_of_the_day(source, target) -> Rate:
                     min = min,
                     min_time = min_time)
         
+        if yesterday_average is not None:
+            percentage_increase = ((now - yesterday_average) / yesterday_average) * 100
+            rate.yesterday_average = yesterday_average
+            rate.percentage_increase = percentage_increase
+        
         return rate
     
     except Exception as err:
@@ -83,6 +131,8 @@ def broadcast(target_currency, rate: Rate):
     max_time = rate.max_time
     min = rate.min
     min_time = rate.min_time
+    yesterday_average = rate.yesterday_average
+    percentage_increase = rate.percentage_increase
     
     now = datetime.datetime.now()
     
@@ -105,10 +155,14 @@ def broadcast(target_currency, rate: Rate):
         sys.exit(1)
     
     message = "<u>{src_flag}SGD --> {target_flag}{currency} ({time})</u>\n".format(src_flag = flags["SGD"], target_flag = flags[target_currency], currency = target_currency, time = now.strftime("%Y-%m-%d"))
-    message = message + "[Max] {rate:.4f} at {time}\n".format(rate = max, time = max_time.strftime("%I:%M %p"))
-    message = message + "[Min] {rate:.4f} at {time}\n".format(rate = min, time = min_time.strftime("%I:%M %p"))
-    message = message + "[Average] {rate:.4f}\n".format(rate = mean)
+    # message = message + "[Max] {rate:.4f} at {time}\n".format(rate = max, time = max_time.strftime("%I:%M %p"))
+    # message = message + "[Min] {rate:.4f} at {time}\n".format(rate = min, time = min_time.strftime("%I:%M %p"))
+    # message = message + "[Average] {rate:.4f}\n".format(rate = mean)
     message = message + "[Now] {rate:.4f}".format(rate = current_rate)
+    
+    if percentage_increase is not None:
+        message = message + "\n[Ytd] {rate:.4f}".format(rate = yesterday_average)
+        message = message + "\n\nIncreased by {percent:.2f}% (compared to yesterday)".format(percent = percentage_increase)
     
     try:
         for row in rows_list:
