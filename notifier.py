@@ -181,7 +181,7 @@ def broadcast(target_currency, rate: Rate):
         sys.exit(1)
     
     try:
-        sql = "SELECT chat_id FROM userinfo WHERE to_currency=%s AND is_active=1 AND username='daeronhing'"
+        sql = "SELECT chat_id FROM userinfo WHERE to_currency=%s AND is_active=1"
         val = (target_currency,)
         sql_cursor.execute(sql, val)
         rows_list = sql_cursor.fetchall()
