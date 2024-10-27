@@ -1,4 +1,4 @@
-emoji_face = ["👋😁🤪🥳🤭🤗🧐"]
+emoji_face = ["👋😁🤪🥳🤭🤗🧐😏🤧🥴🤯"]
 emoji_obj = ["🧮🚫"]
 
 flags = {

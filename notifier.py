@@ -24,8 +24,38 @@ class Rate:
         self.min = min
         self.max_time = max_time
         self.min_time = min_time
-        self.yesterday_average = None
+        self.last_sent_rate = None
         self.percentage_increase = None
+
+def query_last_sent_rate(source, target) -> float:
+    try:
+        mydb = get_connection_pool()
+        sql_cursor = mydb.cursor()
+    
+    except Exception as err:
+        logger.error("Connection to MySQL db failed: {err}".format(err = err))
+        return None
+    
+    try:
+        sql = "SELECT exchange_rate FROM history_rate WHERE from_currency=%s AND to_currency=%s ORDER BY id DESC LIMIT 1"
+        val = (source, target)
+        sql_cursor.execute(sql, val)
+        row = sql_cursor.fetchone()
+        
+    except Exception as err:
+        logger.error("Error fetching date from MySQL db: {err}".format(err = err))
+        sql_cursor.close()
+        mydb.close()
+        return None
+    
+    if row is None:
+        logger.info("%s --> %s last sent was None", source, target)
+        return None
+    
+    sql_cursor.close()
+    mydb.close()
+    
+    return row[0]
 
 def query_average_rate_of_yesterday(source,target) -> float:
     query_api = influx_client.query_api()
@@ -68,7 +98,8 @@ def query_average_rate_of_yesterday(source,target) -> float:
         return None
     
 def query_rate_of_the_day(source, target) -> Rate:
-    yesterday_average = query_average_rate_of_yesterday(source, target)
+    # yesterday_average = query_average_rate_of_yesterday(source, target)
+    last_sent_rate = query_last_sent_rate(source, target)
     query_api = influx_client.query_api()
     
     today_date = datetime.date.today()
@@ -113,9 +144,13 @@ def query_rate_of_the_day(source, target) -> Rate:
                     min = min,
                     min_time = min_time)
         
-        if yesterday_average is not None:
-            percentage_increase = ((now - yesterday_average) / yesterday_average) * 100
-            rate.yesterday_average = yesterday_average
+        # if yesterday_average is not None:
+        #     percentage_increase = ((now - yesterday_average) / yesterday_average) * 100
+        #     rate.yesterday_average = yesterday_average
+        #     rate.percentage_increase = percentage_increase
+        if last_sent_rate is not None:
+            percentage_increase = ((now - last_sent_rate) / last_sent_rate) * 100
+            rate.last_sent_rate = last_sent_rate
             rate.percentage_increase = percentage_increase
         
         return rate
@@ -131,7 +166,8 @@ def broadcast(target_currency, rate: Rate):
     max_time = rate.max_time
     min = rate.min
     min_time = rate.min_time
-    yesterday_average = rate.yesterday_average
+    # yesterday_average = rate.yesterday_average
+    last_sent_rate = rate.last_sent_rate
     percentage_increase = rate.percentage_increase
     
     now = datetime.datetime.now()
@@ -145,7 +181,7 @@ def broadcast(target_currency, rate: Rate):
         sys.exit(1)
     
     try:
-        sql = "SELECT chat_id FROM userinfo WHERE to_currency=%s AND is_active=1"
+        sql = "SELECT chat_id FROM userinfo WHERE to_currency=%s AND is_active=1 AND username='daeronhing'"
         val = (target_currency,)
         sql_cursor.execute(sql, val)
         rows_list = sql_cursor.fetchall()
@@ -158,21 +194,40 @@ def broadcast(target_currency, rate: Rate):
     # message = message + "[Max] {rate:.4f} at {time}\n".format(rate = max, time = max_time.strftime("%I:%M %p"))
     # message = message + "[Min] {rate:.4f} at {time}\n".format(rate = min, time = min_time.strftime("%I:%M %p"))
     # message = message + "[Average] {rate:.4f}\n".format(rate = mean)
-    message = message + "[Now] {rate:.4f}".format(rate = current_rate)
+    message = message + "<b>[Now] {rate:.4f}</b>".format(rate = current_rate)
     
     if percentage_increase is not None:
-        message = message + "\n[Ytd] {rate:.4f}".format(rate = yesterday_average)
+        # message = message + "\n[Ytd Avg] {rate:.4f}".format(rate = yesterday_average)
+        message = message + "\n[Ytd] {rate:.4f}".format(rate = last_sent_rate)
         message = message + "\n\nIncreased by {percent:.2f}% (compared to yesterday)".format(percent = percentage_increase)
     
-    try:
-        for row in rows_list:
+    for row in rows_list:
+        try: 
             my_bot.send_message(row[0],
                                 text = message,
                                 parse_mode = "HTML")
-    
+        
+        except Exception as err:
+            logger.error("Send notification on Telegram failed: {err}".format(err = err))
+            logger.error("chat_id: {id}".format(id = row[0]))
+
+def update_last_sent(target_currency, rate: Rate):
+    current_rate = rate.now
+    try:
+        mydb = get_connection_pool()
+        sql_cursor = mydb.cursor()
+        
     except Exception as err:
-        logger.error("Send notification on Telegram failed: {err}".format(err = err))
-        sys.exit(1)
+        logger.error("Connection to MySQL db failed: {err}".format(err = err))
+        return
+    
+    sql = "INSERT INTO history_rate (from_currency, to_currency, exchange_rate) VALUES (%s, %s, %s)"
+    val = ('SGD', target_currency, current_rate)
+    sql_cursor.execute(sql, val)
+    mydb.commit()
+    
+    sql_cursor.close()
+    mydb.close()
 
 if __name__ == "__main__":
     log_path = os.path.join(os.getcwd(), "log/notifier.log")
@@ -197,5 +252,6 @@ if __name__ == "__main__":
     # Separate so that the subsequent message doesn't take too long to send
     for (t, r) in rate:
         broadcast(t, r)
+        update_last_sent(t, r)
 
     logger.info("Published successfully")

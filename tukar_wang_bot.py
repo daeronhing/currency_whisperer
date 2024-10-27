@@ -49,7 +49,7 @@ def now(msg: telebot.types.Message):
     except Exception as err:
         logger.error("Connection to MySQL db failed: {err}".format(err = err))
         my_bot.send_message(chat_id,
-                            text="Please try again later")
+                            text="Please try again later🥴")
         sql_cursor.close()
         mydb.close()
         return
@@ -63,7 +63,7 @@ def now(msg: telebot.types.Message):
     except Exception as err:
         logger.error("Fetching data from MySQL db failed: {err}".format(err = err))
         my_bot.send_message(chat_id,
-                            text="Please try again later")
+                            text="Please try again later🥴")
         sql_cursor.close()
         mydb.close()
         return
@@ -97,7 +97,7 @@ def now(msg: telebot.types.Message):
     except Exception as err:
         logger.error("/now : {err}".format(err = err))
         my_bot.send_message(chat_id,
-                            text="Please try again later")
+                            text="Please try again later🥴")
         
     sql_cursor.close()
     mydb.close()
@@ -133,7 +133,7 @@ def subscribe_to(msg: telebot.types.Message):
     except Exception as err:
         logger.error("Connection to MySQL db failed: {err}".format(err = err))
         my_bot.send_message(chat_id,
-                            text="Please try again later")
+                            text="Please try again later🥴")
         sql_cursor.close()
         mydb.close()
         return
@@ -144,10 +144,10 @@ def subscribe_to(msg: telebot.types.Message):
         sql_cursor.execute(sql, val)
         row = sql_cursor.fetchone()
     
-    except:
+    except Exception as err:
         logger.error("Error fetching data from MySQL db: {err}".format(err = err))
         my_bot.send_message(chat_id,
-                            text="Please try again later")
+                            text="Please try again later🥴")
         sql_cursor.close()
         mydb.close()
         return
@@ -166,8 +166,8 @@ def subscribe_to(msg: telebot.types.Message):
         
     else:
         logger.info("%s (id: %s) resume subscription for %s", username, chat_id, currency)
-        sql = "UPDATE userinfo SET is_active=1 WHERE chat_id=%s AND to_currency=%s"
-        val = (chat_id, currency)
+        sql = "UPDATE userinfo SET is_active=1, activated_datetime=%s WHERE chat_id=%s AND to_currency=%s"
+        val = (now, chat_id, currency)
         sql_cursor.execute(sql, val)
         reply = "Subscription resumed🤗"
         mydb.commit()
@@ -179,15 +179,128 @@ def subscribe_to(msg: telebot.types.Message):
     except Exception as err:
         logger.error("/jpy/myr:{err}".format(err = err))
         my_bot.send_message(chat_id,
-                            text="Please try again later")
+                            text="Please try again later🥴")
         
     sql_cursor.close()
     mydb.close()
 
 @my_bot.message_handler(commands=['unsubscribe'])
 def unsubscribe_to(msg: telebot.types.Message):
-    my_bot.send_message(msg.chat.id,
-                        text="🚫🤪NO BACKSIES!!!")
+    chat_id = msg.chat.id
+    
+    my_bot.send_chat_action(
+        chat_id = chat_id,
+        action = "typing"
+    )
+    
+    try:
+        mydb = get_connection_pool()
+        sql_cursor = mydb.cursor()
+        
+    except Exception as err:
+        logger.error("Connection to MySQL db failed: {err}".format(err = err))
+        my_bot.send_message(chat_id,
+                            text="Please try again later🥴")
+    
+    sql = "SELECT to_currency FROM userinfo WHERE chat_id=%s AND is_active=1"
+    val = (chat_id, )
+    
+    try:
+        sql_cursor.execute(sql, val)
+        row_list = sql_cursor.fetchall()
+    
+    except Exception as err:
+        logger.error("Fetch result from MySQL db failed: {err}".format(err = err))
+    
+    markup = ReplyKeyboardMarkup(row_width = 2, resize_keyboard = True, one_time_keyboard = True)
+    currency_short_form = available_currency_dict.values()
+    descriptive_form = available_currency_dict.keys()
+    temp_dict = dict(zip(currency_short_form, descriptive_form))
+    
+    for row in row_list:
+        button = temp_dict.get(row[0])
+        markup.add(KeyboardButton(button))
+    
+    my_bot.send_message(chat_id,
+                        "Which currency do you wish to unsubscribe?",
+                        reply_markup = markup)
+    
+    sql_cursor.close()
+    mydb.close()
+    
+    my_bot.register_next_step_handler(msg, last_check)
+    # my_bot.send_message(msg.chat.id,
+    #                     text="🚫🤪NO BACKSIES!!!")
+    
+def last_check(message: telebot.types.Message):
+    username = message.chat.username
+    chat_id = message.chat.id
+    currency_long_form = message.text
+    currency_short_form = available_currency_dict.get(currency_long_form)
+    
+    logger.info("%s (id: %s) unsubscribing %s", username, chat_id, currency_long_form)
+    
+    if currency_short_form is None:
+        reply_text = "Have you previously subscribed to {currency}?🧐".format(currency = currency_long_form)
+        my_bot.send_message(chat_id,
+                            reply_text)
+        return
+    
+    markup = ReplyKeyboardMarkup(row_width = 2, resize_keyboard = True, one_time_keyboard = True)
+    markup.add(KeyboardButton("Yes"))
+    markup.add(KeyboardButton("No"))
+    
+    confirmation_text = "Are you sure you want to unsubscribe {currency}?🤧".format(currency = currency_long_form)
+    
+    my_bot.send_message(chat_id,
+                        confirmation_text,
+                        reply_markup = markup)
+    
+    my_bot.register_next_step_handler(message, set_to_inactive, currency_short_form)
+    
+def set_to_inactive(message: telebot.types.Message, currency):
+    username = message.chat.username
+    chat_id = message.chat.id
+    
+    logger.info("%s (id: %s) chosen %s to unsubsribe %s", username, chat_id, message.text, currency)
+    
+    if message.text == "No":
+        my_bot.send_message(chat_id,
+                            "Phew, that was a close one😏")
+        
+    elif message.text == "Yes":
+        my_bot.send_message(chat_id,
+                            "Unsubscribing...")
+        
+        try:
+            mydb = get_connection_pool()
+            sql_cursor = mydb.cursor()
+            
+        except Exception as err:
+            logger.error("Connection to MySQL db failed: {err}".format(err = err))
+            my_bot.send_message(chat_id,
+                                "Unsubscription failed. Please try again later🥴.")
+        
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sql = "UPDATE userinfo SET is_active=0, deactivated_datetime=%s WHERE chat_id=%s AND to_currency=%s"
+        val = (now, chat_id, currency)
+        
+        try: 
+            sql_cursor.execute(sql, val)
+            mydb.commit()
+        
+        except Exception as err:
+            logger.error("Failed to execute SQL for unsubscription, {err}".format(err = err))
+            
+        my_bot.send_message(chat_id,
+                            "Unsubscribed🤧")
+        
+        sql_cursor.close()
+        mydb.close()
+        
+    else:
+        my_bot.send_message(chat_id,
+                            "I don't understand🤯")
 
 @my_bot.message_handler(commands=['test-emoji'])
 def test_emoji(message):
@@ -258,7 +371,7 @@ def calc_conversion(message: telebot.types.Message, currency):
     except Exception as err:
         logger.warning("Some error in calculator: {err}".format(err = err))
         my_bot.send_message(chat_id,
-                            text="Please try again later")
+                            text="Please try again later🥴")
         return
     
     my_bot.send_chat_action(
@@ -285,7 +398,7 @@ def calc_conversion(message: telebot.types.Message, currency):
     except Exception as err:
         logger.error("conversion error: {err}".format(err = err))
         my_bot.send_message(chat_id,
-                            text="Please try again later")
+                            text="Please try again later🥴")
         
     converted_amount = amount * rate
     reply = "For {amt} SGD, you get {converted:.2f} {currency}".format(amt = amount, converted = converted_amount, currency = currency)
