@@ -14,7 +14,8 @@ link = {
     "JPY": "https://www.google.com/finance/quote/SGD-JPY?hl=en",
     "CNY": "https://www.google.com/finance/quote/SGD-CNY?hl=en",
     "TWD": "https://www.google.com/finance/quote/SGD-TWD?hl=en",
-    "GBP": "https://www.google.com/finance/quote/SGD-GBP?hl=en"
+    "GBP": "https://www.google.com/finance/quote/SGD-GBP?hl=en",
+    "AED": "https://www.google.com/finance/quote/SGD-AED?hl=en"
 }
 
 def get_rate(url: str) -> float:

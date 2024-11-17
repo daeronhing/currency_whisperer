@@ -7,7 +7,8 @@ flags = {
     "MYR": "🇲🇾",
     "CNY": "🇨🇳",
     "TWD": "🇹🇼",
-    "GBP": "🇬🇧"
+    "GBP": "🇬🇧",
+    "AED": "🇦🇪"
 }
 
 available_currency_dict = {
@@ -15,5 +16,6 @@ available_currency_dict = {
     "🇲🇾 Malaysia Ringgit 🇲🇾": "MYR",
     "🇨🇳 Chinese Yuan 🇨🇳": "CNY",
     "🇹🇼 Taiwan Dollar 🇹🇼": "TWD",
-    "🇬🇧 Pound Sterling 🇬🇧": "GBP"
+    "🇬🇧 Pound Sterling 🇬🇧": "GBP",
+    "🇦🇪 Arab Emirates Dirham 🇦🇪": "AED",
 }
