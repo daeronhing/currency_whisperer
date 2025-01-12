@@ -1,5 +1,3 @@
-To be added soon HAHA
-
 # Currency Whisperer
 Link to Telegram bot: https://t.me/TukarWangBot
 ## Introduction
